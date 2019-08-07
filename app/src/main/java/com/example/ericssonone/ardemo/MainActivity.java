@@ -80,7 +80,7 @@ public class MainActivity extends Activity {
             
             //Core program loop
             try {
-                DatagramSocket dsocket = new DatagramSocket(1997);  //Socket listens constantly 
+                DatagramSocket dsocket = new DatagramSocket(1997);  //Create socket to recieve data through 
                 Log.i(TAG, "Datagram socket created");
                 while (true) {
 
@@ -133,7 +133,7 @@ public class MainActivity extends Activity {
                     Imgproc.resize(frame, frame, new Size((Phone_Width-1)/2, Phone_Height)); //resize to fill half the screen
                     //Imgproc.resize(frame, frame, new Size(Phone_Height-1/2, Phone_Width));
                     //Core.rotate(frame, frame, Core.ROTATE_90_CLOCKWISE);
-                    Core.hconcat(Arrays.asList(frame, frame), frame);
+                    Core.hconcat(Arrays.asList(frame, frame), frame);  //concatenate frame with itself
 
                     // Create bitmap to show the frame
                     final Bitmap bm = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888); //Bitmap same size as frame
@@ -174,7 +174,7 @@ public class MainActivity extends Activity {
         Log.i(TAG, "called onCreate");
         super.onCreate(savedInstanceState);
 
-        // Starting shit
+        // Starting stuff
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         View decorView = getWindow().getDecorView();
@@ -185,28 +185,13 @@ public class MainActivity extends Activity {
         int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_FULLSCREEN;
         decorView.setSystemUiVisibility(uiOptions);
-
         setContentView(R.layout.show_camera);
 
-
-        //Test Executor thread
-        //getUDPData test = new getUDPData();
-        //test.execute(getData);
-
-        //Test Asynch thread
+        
         //Make Java happy and run the program!
         Integer x = new Integer(3);
         new DownloadUDPData().execute(x, x, x);
 
-
-
-        /*
-        mOpenCvCameraView = (JavaCameraView) findViewById(R.id.show_camera_activity_java_surface_view);
-
-        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-
-        mOpenCvCameraView.setCvCameraViewListener(this);
-        */
     }
 /*
     @Override
