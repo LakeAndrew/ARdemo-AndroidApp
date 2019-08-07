@@ -54,56 +54,49 @@ public class MainActivity extends Activity {
     // Used for logging success or failure messages
     private static final String TAG = "OCVSample::Activity";
 
-
+    
     public MainActivity() {
         Log.i(TAG, "Instantiated new " + this.getClass());
     }
 
-
+    // Class used to run the task continuously. We needed a background task because Android wouldn't let us run the code in the main activity
     private class DownloadUDPData extends AsyncTask<Integer, Integer, Integer> {
         @Override
         protected Integer doInBackground(Integer... anInt) {
-            Log.i(TAG, "Asynch shitz");
+            Log.i(TAG, "Asynch background task started");
             // Create DatagramSocket and UDP setup variables
-            Log.i(TAG, "Passed other shitz");
 
             int BUF_LEN = 65540;
             byte[] buffer = new byte[BUF_LEN];
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            Log.i(TAG, "shitz0");
-            //int recvMsgSize;
+            Log.i(TAG, "Datagram packet created");
             byte sizeofint = 8;
             int PACK_SIZE = 4096;
             //int FRAME_INTERVAL = (1000/30);
-            Log.i(TAG, "shitz1");
             int packetlength;
 
-            // The good shit
+            // UDP RX Code starts here
+            // Listen to the socket and recieve data. This is an RX only program
+            
+            //Core program loop
             try {
-                Log.i(TAG, "shitz1.5");
-                DatagramSocket dsocket = new DatagramSocket(1997);
-                Log.i(TAG, "shitz2");
-
+                DatagramSocket dsocket = new DatagramSocket(1997);  //Socket listens constantly 
+                Log.i(TAG, "Datagram socket created");
                 while (true) {
 
                     do {
-                        Log.i(TAG, "I can do shitz");
                         dsocket.receive(packet);
-                        Log.i(TAG, "I can do shitz and be liberal");
+                        Log.i(TAG, "socket recieve");
                         packetlength = packet.getLength();
-                        //for (int i = 0; i < buffer.length; i++){
-                        //    Log.i(TAG, String.format("%02x ", buffer[i]));
-                        //}
 
                         Log.i(TAG, "Size of int pack = " + packetlength);
                     } while (packetlength > 4);
-                    final ByteArrayInputStream bytein = new ByteArrayInputStream(packet.getData());
-                    //final DataInputStream datain = new DataInputStream(bytein);
-                    final int total_pack = bytein.read();
-                    //final String total_pack_temp = new int[packet.getData()];
-                    //dsocket.receive(packet);
+                    final ByteArrayInputStream bytein = new ByteArrayInputStream(packet.getData()); //Create byte array from packet
+                    final int total_pack = bytein.read(); //read from ByteArrayInputStream
+ 
                     Log.i(TAG, "Size of int pack outside = " + packet.getLength());
                     Log.i(TAG, "Total Pack size:" + total_pack);
+                    //read packet into a long buffer
                     byte[] longbuf = new byte[PACK_SIZE * total_pack];
                     for (int i = 0; i < total_pack; i++) {
                         dsocket.receive(packet);
@@ -113,32 +106,38 @@ public class MainActivity extends Activity {
 
                     }
                     Log.i(TAG, "Received packet from" + packet.getAddress() + ":" + packet.getPort());
-                    //ByteBuffer something = new ByteBuffer();
-                    //Mat rawData = Mat(1, PACK_SIZE * total_pack, CV_8UC1, something);
-                    Mat rawData = new Mat(1, PACK_SIZE * total_pack, CvType.CV_8UC1);
-                    rawData.put(0, 0, longbuf);
-                    Mat frame = Imgcodecs.imdecode(rawData, Imgcodecs.CV_LOAD_IMAGE_COLOR);
-                    if (frame.size().width == 0) {
-                        System.err.println("Darn");
+
+                    //Packet has now been recieved, end of UDP section
+                    
+                    // START OF OPENCV side of things
+                    
+                    //In open CV, data is stored in Matrix objects
+                    Mat rawData = new Mat(1, PACK_SIZE * total_pack, CvType.CV_8UC1);   //create new Mat object
+                    rawData.put(0, 0, longbuf); // Put the buffer data into the Mat
+                    Mat frame = Imgcodecs.imdecode(rawData, Imgcodecs.CV_LOAD_IMAGE_COLOR); //Decode data into new mat object
+                    if (frame.size().width == 0) { //If width is zero then no data was recieved that could populate the mat 
+                        System.err.println("Empty Mat object recieved");
                         continue;
                     }
-                    // Create Stereovision
-                    DisplayMetrics displayMetrics = new DisplayMetrics();
-                    getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+                    // Create Stereovision bny splitting the image into 2 identical images
+                    
+                    //Fit the data to the size of the screen
+                    DisplayMetrics displayMetrics = new DisplayMetrics(); 
+                    getWindowManager().getDefaultDisplay().getMetrics(displayMetrics); //read the screen's display data
 
-                    int Phone_Width = displayMetrics.widthPixels;
-                    int Phone_Height = displayMetrics.heightPixels;
+                    int Phone_Width = displayMetrics.widthPixels; //Width of phone in pixels
+                    int Phone_Height = displayMetrics.heightPixels;//Height of phone in pixels
 
 
-                    Mat frame_out = frame.clone();
-                    Imgproc.resize(frame, frame, new Size((Phone_Width-1)/2, Phone_Height));
+                    Mat frame_out = frame.clone(); 
+                    Imgproc.resize(frame, frame, new Size((Phone_Width-1)/2, Phone_Height)); //resize to fill half the screen
                     //Imgproc.resize(frame, frame, new Size(Phone_Height-1/2, Phone_Width));
                     //Core.rotate(frame, frame, Core.ROTATE_90_CLOCKWISE);
                     Core.hconcat(Arrays.asList(frame, frame), frame);
 
-
-                    final Bitmap bm = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888);
-                    Utils.matToBitmap(frame, bm);
+                    // Create bitmap to show the frame
+                    final Bitmap bm = Bitmap.createBitmap(frame.cols(), frame.rows(), Bitmap.Config.ARGB_8888); //Bitmap same size as frame
+                    Utils.matToBitmap(frame, bm);   //Convert frame to bitmap
 
                     //ImageView show = (ImageView) findViewById(R.id.screen);
                     //show.setImageBitmap(bm);
@@ -168,7 +167,7 @@ public class MainActivity extends Activity {
 
     }
 
-
+    //onCreate method that runs the program when the app is opened
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         System.loadLibrary("opencv_java3");
@@ -195,9 +194,8 @@ public class MainActivity extends Activity {
         //test.execute(getData);
 
         //Test Asynch thread
-        //Make Java happy
+        //Make Java happy and run the program!
         Integer x = new Integer(3);
-
         new DownloadUDPData().execute(x, x, x);
 
 
